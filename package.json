@@ -1,0 +1,52 @@
+{
+  "name": "@metrics-hub/sdk",
+  "version": "1.1.0",
+  "description": "Official SDK for building MetricsHub applications with database, integrations, and cron jobs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "metricshub",
+    "sdk",
+    "database",
+    "schema",
+    "cron",
+    "integrations",
+    "google-ads",
+    "analytics",
+    "marketing",
+    "typescript",
+    "zod"
+  ],
+  "author": "Metrics Hub Team",
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^3.22.4",
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/metrics-cz/metrics-hub.git",
+    "directory": "packages/plugin-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/metrics-cz/metrics-hub/issues"
+  },
+  "homepage": "https://github.com/metrics-cz/metrics-hub#readme"
+}
