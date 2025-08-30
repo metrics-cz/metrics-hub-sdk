@@ -6,10 +6,12 @@ import { GoogleDriveClient } from "./services/GoogleDriveClient";
 import { GmailClient } from "./services/GmailClient";
 import { GoogleDocsClient } from "./services/GoogleDocsClient";
 import { GoogleSearchConsoleClient } from "./services/GoogleSearchConsoleClient";
+import { ConnectionManager } from "./services/ConnectionManager";
 import { PluginConfig } from "./types";
 import { MetricsHubConfig } from "./types/database";
 import { MetricsHubSchemaInstance } from "./database/schema";
 import { DatabaseManager } from "./database/database-manager";
+import { ComponentLogger, SDKLogger } from "./utils/Logger";
 
 export class MetricsHubSDK {
     // Google service integrations (existing functionality)
@@ -21,6 +23,9 @@ export class MetricsHubSDK {
     public searchConsole: GoogleSearchConsoleClient;
     public docs: GoogleDocsClient;
 
+    // OAuth and Connection Management
+    public connection: ConnectionManager;
+
     // Backward compatibility aliases
     public googleAds: GoogleAdsClient;
     public googleAnalytics: GoogleAnalyticsClient;
@@ -29,7 +34,8 @@ export class MetricsHubSDK {
     public tables?: any; // Will be dynamically typed based on schema
     private dbManager?: DatabaseManager;
     private schema?: MetricsHubSchemaInstance<any>;
-    private config: PluginConfig;
+    protected config: PluginConfig;
+    protected logger: ComponentLogger;
 
     // Constructor 1: Original PluginConfig (backward compatibility)
     constructor(config: PluginConfig);
@@ -54,6 +60,12 @@ export class MetricsHubSDK {
         this.gmail = new GmailClient(this.config);
         this.searchConsole = new GoogleSearchConsoleClient(this.config);
         this.docs = new GoogleDocsClient(this.config);
+
+        // Initialize connection manager
+        this.connection = new ConnectionManager(this.config);
+
+        // Initialize logger
+        this.logger = SDKLogger;
 
         // Add aliases for backward compatibility
         this.googleAds = this.ads;
@@ -104,6 +116,9 @@ export class MetricsHubSDK {
         this.gmail.updateConfig(this.config);
         this.searchConsole.updateConfig(this.config);
         this.docs.updateConfig(this.config);
+        this.connection.updateConfig(this.config);
+
+        this.logger.info('SDK configuration updated', { companyId: newConfig.companyId });
     }
 
     /**
