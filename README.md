@@ -1,6 +1,6 @@
 # MetricsHub SDK
 
-Official unified SDK for building MetricsHub applications. Get everything in one package: auto-generated database + all Google services, without separate hosting.
+A powerful, unified toolkit for building sophisticated MetricsHub applications. Provides seamless integration with Google services, advanced OAuth management, comprehensive error handling, and a robust plugin development framework.
 
 ## 🏗️ Architecture Overview
 
@@ -31,8 +31,12 @@ Both components share the **same database** via the unified SDK, enabling seamle
 🚀 **Unified Package**: Database + Google services in one SDK  
 📊 **Auto-Generated Database**: Instant PostgreSQL with Zod schema validation  
 🔧 **Complete Google Suite**: Ads, Analytics, Sheets, Drive, Gmail, Docs, Search Console  
-⚡ **Schema-First**: Automatic table creation from TypeScript schemas  
-🔐 **Multi-tenant**: Company-scoped isolation with enterprise security  
+🏗️ **Advanced Google Ads**: Account management, hierarchy handling, campaign optimization  
+🔐 **OAuth Management**: Automatic token refresh, connection monitoring, multi-provider auth  
+⚠️ **Structured Errors**: Specialized error classes with retry logic and debugging info  
+📝 **Component Logging**: Granular logging system with performance monitoring  
+🔌 **Plugin Framework**: Build custom extensions with state management and messaging  
+🧪 **Testing Utilities**: Mock data generation, API simulation, performance testing  
 📱 **Iframe Ready**: PostMessage auth for embedded applications  
 🎯 **TypeScript Native**: Full type safety and auto-completion  
 
@@ -133,10 +137,25 @@ const recentAnalytics = await sdk.tables.analytics.select({
 ### 4. Google Services Integration
 
 ```typescript
-// All Google services are pre-configured and ready to use
-const campaigns = await sdk.ads.getCampaigns();
-const analyticsReports = await sdk.analytics.getReports();
-const spreadsheetData = await sdk.sheets.read('spreadsheet-id', 'Sheet1!A1:Z100');
+// Google Ads with advanced account management
+const accounts = await sdk.ads.listAllAccounts();
+const hierarchy = await sdk.ads.getAccountHierarchy('manager-account-id');
+const campaigns = await sdk.ads.getCampaigns('customer-id');
+
+// Google Analytics
+const analyticsReports = await sdk.analytics.getReports({
+  viewId: 'view-id',
+  startDate: '30daysAgo',
+  endDate: 'yesterday'
+});
+
+// Google Sheets with formatting
+const spreadsheet = await sdk.sheets.createSpreadsheet('Report', [
+  { title: 'Summary' },
+  { title: 'Details' }
+]);
+
+// Other Google Services
 const driveFiles = await sdk.drive.listFiles();
 const emails = await sdk.gmail.getMessages({ query: 'is:unread' });
 const documents = await sdk.docs.getDocument('doc-id');
@@ -279,6 +298,161 @@ async function showCampaigns() {
 }
 ```
 
+## 🔧 Enhanced Features
+
+### Google Ads Account Management
+
+```typescript
+// List all accessible Google Ads accounts
+const accounts = await sdk.ads.listAllAccounts();
+
+// Get account hierarchy for manager accounts
+const hierarchy = await sdk.ads.getAccountHierarchy('manager-account-id');
+
+// Get detailed account information
+const accountDetails = await sdk.ads.getAccountDetails('customer-id');
+
+// Get MCC (Manager) accounts
+const mccAccounts = await sdk.ads.getMCCAccounts();
+
+// Get child accounts for a manager
+const childAccounts = await sdk.ads.getChildAccounts('mcc-id');
+```
+
+### OAuth Connection Management
+
+```typescript
+// Check connection status
+const isConnected = await sdk.connection.isConnected('google-ads');
+
+// Get authorization URL for OAuth flow
+const authUrl = await sdk.connection.getAuthorizationUrl(
+  'google-ads',
+  'https://your-app.com/callback'
+);
+
+// Get connection information
+const connectionInfo = await sdk.connection.getConnectionInfo('google-ads');
+
+// Refresh expired tokens automatically
+const token = await sdk.connection.getAccessToken('google-ads');
+```
+
+### Advanced Error Handling
+
+```typescript
+import { 
+  GoogleAdsAPIError, 
+  ConnectionError, 
+  RateLimitError,
+  ValidationError,
+  ErrorUtils 
+} from '@metrics-hub/sdk';
+
+try {
+  const campaigns = await sdk.ads.getCampaigns('customer-id');
+} catch (error) {
+  if (error instanceof GoogleAdsAPIError && error.quotaExceeded) {
+    console.log('API quota exceeded, waiting...');
+  } else if (error instanceof ConnectionError && error.expired) {
+    console.log('Connection expired, please reauthenticate');
+  } else if (error instanceof RateLimitError) {
+    console.log(`Rate limited, retry after ${error.retryAfter} seconds`);
+  }
+  
+  // Get user-friendly error message
+  const friendlyMessage = ErrorUtils.getUserFriendlyMessage(error);
+}
+```
+
+### Component-Based Logging
+
+```typescript
+import { Logger, GoogleAdsLogger, ConnectionLogger } from '@metrics-hub/sdk';
+
+// Set global log level
+Logger.setLevel('debug');
+
+// Enable specific components
+Logger.enableComponent('GoogleAds');
+Logger.enableComponent('Connection');
+
+// Use component-specific loggers
+GoogleAdsLogger.info('Fetching campaigns', { customerId: '123456789' });
+ConnectionLogger.warn('Token expires soon', { provider: 'google-ads' });
+```
+
+### Plugin Development
+
+```typescript
+import { PluginSDK } from '@metrics-hub/sdk';
+
+const pluginSDK = new PluginSDK(config, {
+  id: 'campaign-optimizer',
+  name: 'Campaign Optimizer',
+  version: '1.0.0',
+  permissions: ['google-ads']
+});
+
+// Plugin state management
+await pluginSDK.setState('settings', { targetCPA: 50 });
+const settings = await pluginSDK.getState('settings');
+
+// Inter-plugin communication
+pluginSDK.onMessage('optimization-request', async (data) => {
+  // Handle optimization request
+});
+
+await pluginSDK.sendMessage('reporting-plugin', 'optimization-complete', {
+  campaignsOptimized: 15,
+  improvement: '12.5%'
+});
+```
+
+### Testing Utilities
+
+```typescript
+import { TestingSDK, TestUtils } from '@metrics-hub/sdk';
+
+const testSDK = TestUtils.createTestSDK();
+testSDK.enableTestMode();
+
+// Generate mock data
+const mockCampaigns = testSDK.generateMockCampaigns('123456789', {
+  count: 10,
+  realistic: true
+});
+
+// Mock API responses
+testSDK.mockConnection('google-ads', { campaigns: mockCampaigns });
+
+// Simulate errors
+testSDK.simulateError('rate_limit', 0.1); // 10% error rate
+
+// Performance testing
+const result = await testSDK.measurePerformance(
+  () => sdk.ads.getCampaigns('123456789'),
+  'getCampaigns'
+);
+```
+
+## 📚 Documentation
+
+### Getting Started
+- **[Getting Started Guide](./docs/getting-started.md)** - Quick start with examples
+- **[API Reference](./docs/api-reference.md)** - Complete API documentation
+
+### Advanced Features
+- **[Google Ads Integration](./docs/google-ads-guide.md)** - Advanced Google Ads features
+- **[OAuth Setup](./docs/oauth-guide.md)** - Complete OAuth integration guide
+- **[Error Handling](./docs/error-handling.md)** - Master error handling patterns
+
+### Development
+- **[Plugin Development](./docs/plugin-guide.md)** - Build custom extensions
+- **[Metadata.json Guide](./docs/metadata-json-guide.md)** - Complete integration metadata reference
+- **[Testing Guide](./docs/testing-guide.md)** - Testing utilities and patterns
+
+
 ## Available Operations
 
 ### Database
@@ -289,17 +463,79 @@ async function showCampaigns() {
 - `sdk.tables.{tableName}.count(where)` - Count records
 
 ### Google Services  
-- `sdk.googleAds` - Google Ads API
-- `sdk.googleAnalytics` - Google Analytics API
-- `sdk.sheets` - Google Sheets API
+- `sdk.ads` - Google Ads API with account management
+- `sdk.analytics` - Google Analytics API
+- `sdk.sheets` - Google Sheets API with formatting
 - `sdk.drive` - Google Drive API
 - `sdk.gmail` - Gmail API
 - `sdk.docs` - Google Docs API
 - `sdk.searchConsole` - Search Console API
 
-## TypeScript Support
+### Connection Management
+- `sdk.connection.isConnected(provider)` - Check connection status
+- `sdk.connection.getAuthorizationUrl(provider, redirectUrl)` - Get OAuth URL
+- `sdk.connection.getConnectionInfo(provider)` - Get connection details
 
-Full TypeScript support with automatic type inference from your Zod schemas.
+### Plugin Development
+- `new PluginSDK(config, manifest)` - Create plugin SDK
+- `pluginSDK.setState(key, value)` - Store plugin state
+- `pluginSDK.getState(key)` - Retrieve plugin state
+- `pluginSDK.sendMessage(target, type, data)` - Send messages
+- `pluginSDK.onMessage(type, handler)` - Listen for messages
+
+## 🎯 TypeScript Support
+
+Full TypeScript support with automatic type inference from your Zod schemas and comprehensive error types.
+
+```typescript
+// Automatic type inference from schema
+const user = await sdk.tables.users.insert({
+  name: 'John Doe',     // ✓ string
+  email: 'john@...',    // ✓ email validation
+  role: 'admin'         // ✓ enum validation
+  // lastActive: ...    // ✓ optional field
+});
+
+// Type-safe error handling
+import type { 
+  GoogleAdsAPIError, 
+  ConnectionError,
+  ValidationError 
+} from '@metrics-hub/sdk';
+
+// Full IntelliSense support
+const campaigns = await sdk.ads.getCampaigns(customerId);
+campaigns.campaigns.forEach(campaign => {
+  // ✓ Full type safety
+  console.log(campaign.name, campaign.metrics.clicks);
+});
+```
+
+## 🚀 Performance & Reliability
+
+- **Automatic Retry Logic**: Built-in exponential backoff for transient failures
+- **Connection Pooling**: Optimized database connections
+- **Rate Limit Handling**: Automatic rate limit detection and queuing
+- **Memory Efficient**: Streaming for large datasets
+- **Error Recovery**: Graceful degradation and fallback strategies
+
+## 🛠️ Development Tools
+
+- **Mock Data Generation**: Realistic test data for development
+- **API Simulation**: Full offline development capabilities
+- **Performance Profiling**: Built-in performance monitoring
+- **Debug Logging**: Granular logging for troubleshooting
+- **Type Validation**: Runtime schema validation with Zod
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our GitHub repository for contribution guidelines.
+
+## 📞 Support
+
+- **GitHub Issues**: [Report bugs and feature requests](https://github.com/metrics-cz/metrics-hub/issues)
+- **Documentation**: [Complete guides and API reference](./docs/)
+- **Community**: Join our community for support and discussions
 
 ## License
 
