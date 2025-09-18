@@ -11,11 +11,16 @@ import {
 import { BaseClient } from './BaseClient';
 
 export class GoogleAdsClient extends BaseClient {
-    async getCampaigns(customerId: string): Promise<GoogleAdsCampaignsResponse> {
+    async getCampaigns(customerId: string, loginCustomerId?: string): Promise<GoogleAdsCampaignsResponse> {
       const params = new URLSearchParams({
         companyId: this.config.companyId,
         customerId
       })
+
+      // Add MCC context if provided for accessing child accounts
+      if (loginCustomerId) {
+        params.set('loginCustomerId', loginCustomerId)
+      }
 
       const endpoint = `/api/plugins/google/ads/campaigns?${params.toString()}`
       return this.makeRequest<GoogleAdsCampaignsResponse>(endpoint)
@@ -24,6 +29,7 @@ export class GoogleAdsClient extends BaseClient {
     async getKeywords(customerId: string, options: {
       campaignId?: string
       adGroupId?: string
+      loginCustomerId?: string
     } = {}): Promise<GoogleAdsKeywordsResponse> {
       const params = new URLSearchParams({
         companyId: this.config.companyId,
@@ -36,6 +42,11 @@ export class GoogleAdsClient extends BaseClient {
 
       if (options.adGroupId) {
         params.set('adGroupId', options.adGroupId)
+      }
+
+      // Add MCC context if provided for accessing child accounts
+      if (options.loginCustomerId) {
+        params.set('loginCustomerId', options.loginCustomerId)
       }
 
       const endpoint = `/api/plugins/google/ads/keywords?${params.toString()}`
@@ -105,6 +116,32 @@ export class GoogleAdsClient extends BaseClient {
     }
 
     /**
+     * Get campaigns for child account through MCC permissions
+     * This method implements the Funnel.io/Make.com pattern for accessing child accounts
+     * @param childCustomerId - The child account ID to get campaigns for
+     * @param mccCustomerId - The parent MCC account ID to use for permissions
+     */
+    async getCampaignsForChildAccount(childCustomerId: string, mccCustomerId: string): Promise<GoogleAdsCampaignsResponse> {
+      return this.getCampaigns(childCustomerId, mccCustomerId);
+    }
+
+    /**
+     * Get keywords for child account through MCC permissions
+     * @param childCustomerId - The child account ID to get keywords for
+     * @param mccCustomerId - The parent MCC account ID to use for permissions
+     * @param options - Additional options like campaignId, adGroupId
+     */
+    async getKeywordsForChildAccount(childCustomerId: string, mccCustomerId: string, options: {
+      campaignId?: string
+      adGroupId?: string
+    } = {}): Promise<GoogleAdsKeywordsResponse> {
+      return this.getKeywords(childCustomerId, {
+        ...options,
+        loginCustomerId: mccCustomerId
+      });
+    }
+
+    /**
      * Get all accessible accounts including MCC client accounts
      * This method combines direct accounts + all MCC client accounts for comprehensive access
      */
@@ -157,6 +194,64 @@ export class GoogleAdsClient extends BaseClient {
 
       } catch (error) {
         console.error('[SDK-GADS] Error in getAllAccountsWithMCCClients:', error);
+        throw error;
+      }
+    }
+
+    /**
+     * Get comprehensive accounts list for plugin use with enhanced display names
+     * This method is optimized for plugin consumption with all accounts and enhanced naming
+     */
+    async getAccountsForPlugin(): Promise<GoogleAdsAccount[]> {
+      try {
+        console.log('[SDK-GADS] Fetching accounts optimized for plugin consumption');
+
+        // Use comprehensive account fetching (all accessible accounts)
+        const accountsResponse = await this.listAllAccounts();
+        if (!accountsResponse.success) {
+          throw new Error('Failed to fetch accounts');
+        }
+
+        console.log('[SDK-GADS] Successfully fetched', accountsResponse.accounts.length, 'accounts');
+
+        // Enhance accounts with better display names for generic accounts
+        const enhancedAccounts = accountsResponse.accounts.map(account => {
+          // Create enhanced copy of account
+          const enhancedAccount = { ...account };
+
+          // Check if account has generic name and enhance it
+          if (!account.descriptiveName ||
+              account.descriptiveName.startsWith('Account ') ||
+              account.descriptiveName.trim() === '' ||
+              account.descriptiveName === account.id) {
+
+            console.log(`[SDK-GADS] Enhancing account ${account.id} with generic name: "${account.descriptiveName}"`);
+
+            // Create a more descriptive name based on account type and ID
+            const accountType = account.manager ? 'MCC' : 'Ads Account';
+            const shortId = account.id.substring(0, 6) + '...';
+
+            enhancedAccount.descriptiveName = `${accountType} (${shortId})`;
+
+            // Add flag to indicate this was a generic name that was enhanced
+            (enhancedAccount as any).hasGenericName = true;
+          } else {
+            (enhancedAccount as any).hasGenericName = false;
+          }
+
+          return enhancedAccount;
+        });
+
+        console.log(`[SDK-GADS] Enhanced ${enhancedAccounts.length} accounts:`, {
+          total: enhancedAccounts.length,
+          mccAccounts: enhancedAccounts.filter(acc => acc.manager).length,
+          withGenericNames: enhancedAccounts.filter(acc => (acc as any).hasGenericName).length
+        });
+
+        return enhancedAccounts;
+
+      } catch (error) {
+        console.error('[SDK-GADS] Error in getAccountsForPlugin:', error);
         throw error;
       }
     }
