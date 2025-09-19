@@ -22,6 +22,20 @@ export { GmailClient } from "./services/GmailClient";
 export { GoogleDocsClient } from "./services/GoogleDocsClient";
 export { GoogleSearchConsoleClient } from "./services/GoogleSearchConsoleClient";
 
+// Universal Service Provider Interface
+export {
+  ServiceProviderInterface,
+  ServiceProviderRegistry
+} from "./services/ServiceProviderInterface";
+export { GoogleAdsServiceProvider } from "./services/GoogleAdsServiceProvider";
+export type {
+  ServiceAccount,
+  ServiceHierarchy,
+  ServiceProviderConfig,
+  ServiceDataRequest,
+  ServiceDataResponse
+} from "./services/ServiceProviderInterface";
+
 // OAuth and Connection Management
 export { ConnectionManager } from "./services/ConnectionManager";
 export type { 
